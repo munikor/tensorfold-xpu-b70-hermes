@@ -1,0 +1,140 @@
+name: build-and-push-image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/image.yml"
+      - "Dockerfile"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  engine:
+    name: build tensorfold-native + libtfgrammar
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    container:
+      image: intel/llm-scaler-vllm@sha256:a397e04d66494637862b1927ee92ab4dd8b2f03f0dc9d359ec9536959a88e704
+      options: --user root
+    steps:
+      - name: Install zig 0.17.0
+        run: |
+          curl -fsSL -o /tmp/zig.tar.xz https://ziglang.org/download/0.17.0/zig-x86_64-linux-0.17.0.tar.xz
+          mkdir -p /opt/zig && tar -xJf /tmp/zig.tar.xz -C /opt/zig --strip-components=1
+          /opt/zig/zig version
+
+      - name: Clone TensorFold (pinned)
+        run: |
+          git clone https://github.com/ashhart/TensorFold /src
+          cd /src && git checkout aafebc969de69a72162dac5a80933a56653c81ff
+          git rev-parse HEAD
+
+      - name: Stage nGEN headers (oneDNN v3.7)
+        run: |
+          git clone --depth 1 --branch v3.7 https://github.com/uxlfoundation/oneDNN /dnnl
+          mkdir -p /ngen/npack /ngen/common /ngen/oneapi/dnnl
+          cp /dnnl/src/gpu/intel/jit/ngen/*.hpp /ngen/
+          cp /dnnl/src/gpu/intel/jit/ngen/*.cpp /ngen/
+          cp /dnnl/src/gpu/intel/jit/ngen/COPYRIGHT /ngen/
+          cp /dnnl/src/gpu/intel/jit/ngen/npack/*.hpp /ngen/npack/
+          cp /dnnl/src/common/bfloat16.hpp /dnnl/src/common/float16.hpp /dnnl/src/common/bit_cast.hpp /ngen/common/
+          cp /dnnl/include/oneapi/dnnl/dnnl.h /dnnl/include/oneapi/dnnl/dnnl_common.h \
+             /dnnl/include/oneapi/dnnl/dnnl_common_types.h /dnnl/include/oneapi/dnnl/dnnl_types.h /ngen/oneapi/dnnl/
+          printf '#pragma once\n#define DNNL_RUNTIME_NONE 0\n#define DNNL_CPU_RUNTIME DNNL_RUNTIME_NONE\n#define DNNL_GPU_RUNTIME DNNL_RUNTIME_NONE\n#define DNNL_API\n' > /ngen/oneapi/dnnl/dnnl_config.h
+          printf '#pragma once\n#define DNNL_VERSION_MAJOR 3\n#define DNNL_VERSION_MINOR 7\n#define DNNL_VERSION_PATCH 0\n#define DNNL_VERSION_HASH ""\n' > /ngen/oneapi/dnnl/dnnl_version.h
+
+      - name: Patch nGEN Product constructor
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          p = pathlib.Path('/ngen/ngen_core.hpp')
+          s = p.read_text()
+          s = re.sub(r'^\s*enum class PlatformType\s*\{[^}]*\};\s*$', '', s, flags=re.M)
+          prod = '''enum class PlatformType {Unknown, Integrated, Discrete};
+
+          struct Product {
+              ProductFamily family;
+              int stepping;
+              PlatformType platformType = PlatformType::Unknown;
+              Product() = default;
+              Product(ProductFamily f, int s = 0, PlatformType pt = PlatformType::Unknown)
+                  : family(f), stepping(s), platformType(pt) {}
+          };'''
+          s2, n = re.subn(r'struct Product\s*\{[^}]*\};', prod, s, count=1)
+          assert n == 1, 'Product struct not found'
+          p.write_text(s2)
+          print('patched Product')
+          PY
+          grep -n -A7 "struct Product" /ngen/ngen_core.hpp | head -12
+
+      - name: Build xpu-native
+        run: |
+          cd /src
+          export PATH=/opt/zig:$PATH
+          zig build xpu-native -Doptimize=ReleaseFast -Dngen-include=/ngen -Docloc=/usr/bin/ocloc
+          ls -la zig-out/xpu/bin/
+
+      - name: Build libtfgrammar (xgrammar v0.2.8)
+        run: |
+          git clone --depth 1 --branch v0.2.8 --recurse-submodules --shallow-submodules https://github.com/mlc-ai/xgrammar /xgrammar
+          cd /src
+          export PATH=/opt/zig:$PATH
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0='*'
+          zig build grammar -Dxgrammar=/xgrammar
+          mkdir -p zig-out/xpu/lib
+          cp zig-out/native/lib/libtfgrammar.so zig-out/xpu/lib/
+          ls -la zig-out/xpu/lib/
+
+      - name: Collect artifacts into the workspace
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/art"
+          cp -a /src/zig-out/xpu "$GITHUB_WORKSPACE/art/xpu"
+          ls -la "$GITHUB_WORKSPACE/art/xpu/bin" "$GITHUB_WORKSPACE/art/xpu/lib"
+
+      - name: Upload engine artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tensorfold-xpu
+          path: art/xpu
+          if-no-files-found: error
+
+  image:
+    name: build and push image
+    needs: engine
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download engine artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tensorfold-xpu
+          path: tensorfold-xpu
+
+      - name: Sanity check binaries
+        run: |
+          ls -la tensorfold-xpu/bin tensorfold-xpu/lib
+          test -x tensorfold-xpu/bin/tensorfold-native
+          test -f tensorfold-xpu/lib/libtfgrammar.so
+
+      - name: Build image
+        run: docker build -t tensorfold-xpu-b70:hermes-2026.11.24 .
+
+      - name: Log in to ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push
+        run: |
+          docker tag tensorfold-xpu-b70:hermes-2026.11.24 ghcr.io/${{ github.repository_owner }}/tensorfold-xpu-b70:hermes-2026.11.24
+          docker tag tensorfold-xpu-b70:hermes-2026.11.24 ghcr.io/${{ github.repository_owner }}/tensorfold-xpu-b70:latest
+          docker push ghcr.io/${{ github.repository_owner }}/tensorfold-xpu-b70:hermes-2026.11.24
+          docker push ghcr.io/${{ github.repository_owner }}/tensorfold-xpu-b70:latest
