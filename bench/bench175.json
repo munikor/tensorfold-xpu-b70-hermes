@@ -1,0 +1,58 @@
+{
+ "ctx200k-1stream": {
+  "config": "ctx200k-1stream",
+  "categories": {
+   "code": {"prompt_tokens": 44, "gen": 300, "ttft": 0.224, "wall": 2.09, "decode": 160.6, "sample": "```python\nfrom typing import List\n\n\ndef merge_sorted_lists(list1: List[int], list2: List[int]) -> List[int]:\n    \"\"\"Merge two sorted lists into a single sorted "},
+   "reasoning": {"prompt_tokens": 57, "gen": 300, "ttft": 0.089, "wall": 2.14, "decode": 145.5, "sample": "To solve the expression $17 \\times 23 + 145/5 - 12^2$, we must adhere to the standard order of operations, often remembered by the acronym PEMDAS: Parentheses, "},
+   "prose": {"prompt_tokens": 36, "gen": 300, "ttft": 0.094, "wall": 2.74, "decode": 113.1, "sample": "A limit order book (LOB) is the fundamental mechanism used by stock exchanges to match buy and sell orders. It functions as a centralized, electronic list of al"},
+   "json": {"prompt_tokens": 65, "gen": 36, "ttft": 0.14, "wall": 0.34, "decode": 170.6, "sample": "{\"ticker\":\"NVDA\",\"side\":\"buy\",\"qty\":100,\"limit_price\":182.50,\"venue\":\"ARCA\",\"tif\":\"DAY\"}"},
+   "edit": {"prompt_tokens": 59, "gen": 35, "ttft": 0.088, "wall": 0.4, "decode": 110.6, "sample": "Upon reviewing the data, it was evident that the figures were disorganized; specifically, fill rates declined significantly, and the desk incurred losses on thr"},
+   "summary": {"prompt_tokens": 84, "gen": 164, "ttft": 0.175, "wall": 2.2, "decode": 80.5, "sample": "A market maker operates by quoting prices on both sides of a two-sided market, earning the spread between bid and ask prices. However, this strategy exposes the"},
+   "chat": {"prompt_tokens": 33, "gen": 250, "ttft": 0.097, "wall": 2.39, "decode": 108.8, "sample": "### Difference Between Limit Orders and Market Orders\n\nThe fundamental difference between a **limit order** and a **market order** lies in the trade-off between"}
+  },
+  "depth": {
+   "8K": {"prompt_tokens": 5986, "ttft": 3.2, "prefill": 1869.0},
+   "32K": {"prompt_tokens": 23866, "ttft": 13.98, "prefill": 1708.0, "decode_at_depth": 53.3, "wall": 14.2},
+   "109K": {"prompt_tokens": 80486, "ttft": 59.68, "prefill": 1349.0, "decode_at_depth": 27.8, "wall": 60.3}
+  },
+  "quality": {
+   "score": 10,
+   "total": 10,
+   "items": [
+    {"q": "What is 17*23?", "answer": "To calculate $17 \\times 23$, we can break it down using the distributive property or standard multiplication:\n\n**Method 1: Distributive Property**\n$$17 \\times 23 = 17 \\times (20 + 3)$$\n$$= (17 \\times ", "ok": true},
+    {"q": "A trader buys 100 shares at 50 and sells at 55. Profit in dollars?", "answer": "To calculate the profit in dollars, we can follow these steps:\n\n1.  **Calculate the profit per share:**\n    $$ \\text{Profit per share} = \\text{Selling Price} - \\text{Buying Price} $$\n    $$ \\text{Prof", "ok": true},
+    {"q": "If a limit buy is at 99 and the market is at 100, does it fill immediately?", "answer": "**No, it does not fill immediately.**\n\nHere’s why:\n\n### How Limit Orders Work\n- A **limit buy order** specifies the **maximum price** you are willing to pay.\n- If you place a limit buy at **$99**, you", "ok": true},
+    {"q": "What does TIF stand for in equities?", "answer": "In the context of equities and financial markets, **TIF** stands for **Time In Force**.\n\n### What is Time In Force?\n\n**Time In Force** is a condition attached to a stock order that specifies how long ", "ok": true},
+    {"q": "Compute 12^2.", "answer": "To compute $12^2$, we need to multiply 12 by itself.\n\n$$12^2 = 12 \\times 12$$\n\n**Step-by-step calculation:**\n\n1.  Break down the multiplication:\n    $$12 \\times 12 = 12 \\times (10 + 2)$$\n2.  Distribut", "ok": true},
+    {"q": "Which is riskier for a market maker: one-sided flow or balanced flow?", "answer": "For a market maker, **one-sided flow is significantly riskier** than balanced flow.\n\nHere’s a detailed breakdown of why:\n\n### 1. Inventory Risk (Position Risk)\n- **One-sided flow**: If all incoming or", "ok": true},
+    {"q": "What is 145/5?", "answer": "To calculate $145 \\div 5$, we can perform long division or break the number down into parts that are easily divisible by 5.\n\n**Method 1: Breaking it down**\nWe can split 145 into 100 and 45.\n1. $100 \\d", "ok": true},
+    {"q": "Name the order type that guarantees execution but not price.", "answer": "The order type that guarantees execution but not price is a **Market Order**.\n\n### Explanation:\n*   **Guaranteed Execution**: A market order instructs the broker to buy or sell an asset immediately at", "ok": true},
+    {"q": "If spread is 0.02 and you trade 1,000 shares as a maker, gross edge in dollars?", "answer": "To calculate the gross edge in dollars, we need to determine the total value of the spread captured by the maker.\n\n### Step 1: Understand the Components\n*   **Spread**: $0.02$ (This is the difference ", "ok": true},
+    {"q": "What is 391 - 144?", "answer": "To calculate $391 - 144$, we can perform the subtraction step-by-step:\n\n1.  **Ones place**: $1 - 4$. Since 1 is smaller than 4, we borrow 1 from the tens place.\n    *   The 9 in the tens place becomes", "ok": true}
+   ]
+  },
+  "tools": {
+   "wall": 0.79,
+   "ttft": 0,
+   "finish": "tool_calls",
+   "name": "place_order",
+   "args": "{\"ticker\":\"MSFT\",\"side\":\"buy\",\"qty\":250,\"limit_price\":415.25,\"venue\":\"NASDAQ\",\"tif\":\"day\"}",
+   "correct": true
+  }
+ },
+ "ctx65k-2stream": {
+  "config": "ctx65k-2stream",
+  "levels": {
+   "1": {"streams": 1, "wall": 2.4, "tokens": 250, "aggregate": 104.4, "per_stream": [104.4]},
+   "2": {"streams": 2, "wall": 2.77, "tokens": 500, "aggregate": 180.2, "per_stream": [90.2, 90.1]}
+  }
+ },
+ "ctx32k-4stream": {
+  "config": "ctx32k-4stream",
+  "levels": {
+   "1": {"streams": 1, "wall": 2.57, "tokens": 250, "aggregate": 97.4, "per_stream": [97.4]},
+   "2": {"streams": 2, "wall": 2.79, "tokens": 500, "aggregate": 179.1, "per_stream": [89.6, 89.6]},
+   "4": {"streams": 4, "wall": 3.8, "tokens": 1000, "aggregate": 262.9, "per_stream": [65.7, 65.7, 65.7, 65.7]}
+  }
+ }
+}
