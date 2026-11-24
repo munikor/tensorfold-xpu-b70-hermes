@@ -116,6 +116,15 @@ jobs:
           name: tensorfold-xpu
           path: tensorfold-xpu
 
+      - name: Normalize artifact layout
+        run: |
+          find tensorfold-xpu -maxdepth 3 | head -20
+          if [ -d tensorfold-xpu/xpu ]; then
+            mv tensorfold-xpu/xpu/bin tensorfold-xpu/bin
+            mv tensorfold-xpu/xpu/lib tensorfold-xpu/lib
+            rmdir tensorfold-xpu/xpu || true
+          fi
+
       - name: Sanity check binaries
         run: |
           ls -la tensorfold-xpu/bin tensorfold-xpu/lib
